@@ -90,8 +90,8 @@ def plotSpectra(assembly,topTOT):
             hist.Scale(1./hist.GetMaximum())
 
     for hist in [histFe_allp,histFe_onep]:
-        hist.GetXaxis().SetTitle("TOT (ADC counts)")
-        hist.GetYaxis().SetTitle("A.U.")
+        hist.GetXaxis().SetTitle("TOT [1/96 MHz]")
+        hist.GetYaxis().SetTitle("Pixels / Peak # pixels")
         hist.GetYaxis().SetTitleOffset(0.5)
     
     histFe_allp.SetLineColor(R.kBlue)
@@ -202,8 +202,8 @@ def plotSpectra(assembly,topTOT):
             hist.Scale(1./hist.GetMaximum())
 
         for hist in [histCuXRF_allp,histCuXRF_onep]:
-            hist.GetXaxis().SetTitle("TOT (ADC counts)")
-            hist.GetYaxis().SetTitle("A.U.")
+            hist.GetXaxis().SetTitle("TOT [1/96 MHz]")
+            hist.GetYaxis().SetTitle("Pixels / Peak # pixels")
             hist.GetYaxis().SetTitleOffset(0.5)
 
         histCoXRF_allp.SetLineColor(R.kBlue)
