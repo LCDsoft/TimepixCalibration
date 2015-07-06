@@ -126,17 +126,17 @@ def fitGlobalSurrogate(assembly):
     for line, fixed_val in zip(lines,fixed_vals):
         if line == Thline:
             tots.append(fixed_val)
-            tot_lerrs.append(R.sqrt(10.0**2 + 5.0**2))
-            tot_uerrs.append(R.sqrt(10.0**2 + 5.0**2))
+            tot_lerrs.append(R.sqrt(5.0**2))
+            tot_uerrs.append(R.sqrt(5.0**2))
             
             energies.append(line[0])
-            energy_lerrs.append(line[1])
-            energy_uerrs.append(line[2])
+            energy_lerrs.append(line[1] + line[0]*0.03)
+            energy_uerrs.append(line[2] + line[0]*0.03)
 
         else:
             tots.append(line[0])
-            tot_lerrs.append(R.sqrt(line[1]**2 + line[3]**2) + R.sqrt(10.0**2 + 5.0**2))
-            tot_uerrs.append(R.sqrt(line[2]**2 + line[3]**2) + R.sqrt(10.0**2 + 5.0**2))
+            tot_lerrs.append(R.sqrt(line[1]**2 + line[3]**2) + R.sqrt((line[0]*0.03)**2 + 5.0**2))
+            tot_uerrs.append(R.sqrt(line[2]**2 + line[3]**2) + R.sqrt((line[0]*0.03)**2 + 5.0**2))
 
             energies.append(fixed_val)
             energy_lerrs.append(0.)
