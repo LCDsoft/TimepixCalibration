@@ -126,17 +126,17 @@ def fitGlobalSurrogate(assembly):
     for line, fixed_val in zip(lines,fixed_vals):
         if line == Thline:
             tots.append(fixed_val)
-            tot_lerrs.append(0.)
-            tot_uerrs.append(0.)
+            tot_lerrs.append(R.sqrt(5.0**2))
+            tot_uerrs.append(R.sqrt(5.0**2))
             
             energies.append(line[0])
-            energy_lerrs.append(line[1])
-            energy_uerrs.append(line[2])
+            energy_lerrs.append(line[1] + line[0]*0.03)
+            energy_uerrs.append(line[2] + line[0]*0.03)
 
         else:
             tots.append(line[0])
-            tot_lerrs.append(R.sqrt(line[1]**2 + line[3]**2))
-            tot_uerrs.append(R.sqrt(line[2]**2 + line[3]**2))
+            tot_lerrs.append(R.sqrt(line[1]**2 + line[3]**2) + R.sqrt((line[0]*0.03)**2 + 5.0**2))
+            tot_uerrs.append(R.sqrt(line[2]**2 + line[3]**2) + R.sqrt((line[0]*0.03)**2 + 5.0**2))
 
             energies.append(fixed_val)
             energy_lerrs.append(0.)
@@ -148,8 +148,8 @@ def fitGlobalSurrogate(assembly):
     canv.SetLeftMargin(0.19)
     gr = R.TGraphAsymmErrors(len(energies),energies,tots,energy_lerrs,energy_uerrs,tot_lerrs,tot_uerrs)
     gr.SetMarkerStyle(20)
-    gr.GetXaxis().SetTitle("Energy (keV)")
-    gr.GetYaxis().SetTitle("TOT (ADC)")
+    gr.GetXaxis().SetTitle("Energy [keV]")
+    gr.GetYaxis().SetTitle("TOT [1/96 MHz]")
     gr.GetYaxis().SetTitleOffset(1.4)
     gr.Draw('AP')
 
@@ -167,6 +167,7 @@ def fitGlobalSurrogate(assembly):
     stats.SetX2NDC(0.96)
     stats.SetY1NDC(0.21)
     stats.SetY2NDC(0.46)
+    stats.SetBorderSize(0)
     gr.SetMinimum(0.)
     gr.SetMaximum(surrogate.Eval(65.0))
     canv.Update()

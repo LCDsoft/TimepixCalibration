@@ -5,6 +5,9 @@ from optparse import OptionParser
 from scipy.stats import gaussian_kde
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+import matplotlib.lines as mlines
+import matplotlib.patches as mpatches
 import ROOT as R
 from os import environ
 import getpass
@@ -240,22 +243,30 @@ def findMostLikelyTOT(assembly,source,llim,ulim):
     fig, ax = plt.subplots(1, 1, figsize=(12, 12))
     ax.tick_params(axis='x', pad=20)
     plt.xticks(np.arange(llim,ulim+1,(ulim-llim)/5.))
-    ax.set_xlabel('TOT (ADC)')
+    ax.set_xlabel('TOT [1/96 MHz]', x=1, y=1, horizontalalignment='right')
+    ax.set_ylabel('Pixels / Total number of pixels', x=1, y=1, verticalalignment='top')
     for i in xrange(len(peak_tots)):
         ax.text(0.01, 0.99 - (i*0.1), r'Peak: $%i \pm ^{%0.2f} _{%0.2f} \pm %0.2f$' %(peak_tots[i],peak_uppersigmas[i],peak_lowersigmas[i],step_size/2.),
                 verticalalignment='top', horizontalalignment='left',
                 transform=ax.transAxes,
-                fontsize=40)
+                fontsize=35)
     ax.hist(tot, bins=100,fc='gray',alpha=0.3,normed=True)
     ax.plot(x_grid, workaround, color='blue', alpha=0.5, lw=3)
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(40)
+    fontP = FontProperties()
+    fontP.set_size(30)
+    blue_line = mlines.Line2D([], [], color='blue', lw=3)
+    grey_box = mpatches.Patch(color='gray', alpha=0.3)
+    fig.legend(handles=[blue_line, grey_box], labels=['KDE PDF', 'Histogram'], loc=(0.63, 0.85), prop=fontP, frameon=False)
     fig.tight_layout()
     fig.savefig("plots/KDEPeaks/Global/%s_%s_GlobalSpectrum.pdf" %(assembly,source))
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 12))
     ax.tick_params(axis='x', pad=20)
-    ax.set_xlabel('TOT (ADC)')
+    plt.xticks(np.arange(llim,ulim+1,(ulim-llim)/5.))
+    ax.set_xlabel('TOT [1/96 MHz]', x=1, y=1, horizontalalignment='right')
+    ax.set_ylabel('$\delta$ KDE PDF / $\delta$ TOT', x=1, y=1, verticalalignment='top')
     ax.plot(x_grid, grad, color='red', alpha=0.5, lw=3)
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(40)
