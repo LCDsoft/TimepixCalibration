@@ -39,7 +39,7 @@ R.gStyle.SetOptFit(1)
 R.gROOT.SetBatch(True)
 
 
-def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
+def fitPixelSurrogates(assembly,parEsts,parLLims,parULims,globalPars):
 
     # thresholds
     Thline = 0
@@ -270,11 +270,8 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
     plt.xticks(np.arange(limits[0],limits[1]+1,(limits[1]-limits[0])/5.))
     # centre of highest bin
     peak_chi2ndf = (bins[np.argmax(n)]+bins[np.argmax(n)+1])/2.
-    print "peak_chi2ndf", peak_chi2ndf
     std_chi2ndf = np.std(chi2ndf1d)
-    print "np.std(chi2ndf1d)", std_chi2ndf
     chi2ndf_cut = peak_chi2ndf + 3*std_chi2ndf
-    print "chi2ndf cut at", chi2ndf_cut
 
     # edit 2d arrays to remove bad fits
     over_chi2threshold = 0
@@ -287,10 +284,42 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
                 b2d[i][j] = 0.
                 c2d[i][j] = 0.
                 t2d[i][j] = 0.
-    print "removed", over_chi2threshold, "pixels due to bad fits"
+
+    # replace zeros with the constants of the neighbour (if they exist)
+    # use the chi2 to check a replaced value isn't propagated
+    n_replaced = 0
+    for i in xrange(256):
+        for j in xrange(256):
+            if a2d[i][j] == 0. and b2d[i][j] == 0. and c2d[i][j] == 0. and t2d[i][j] == 0. :
+                n_replaced = n_replaced + 1
+                if i > 0 and a2d[i-1][j] != 0. and chi2ndf2d[i-1][j] != 0. :
+                    a2d[i][j] = a2d[i-1][j]
+                    b2d[i][j] = b2d[i-1][j]
+                    c2d[i][j] = c2d[i-1][j]
+                    t2d[i][j] = t2d[i-1][j]
+                elif i < 255 and a2d[i+1][j] != 0. and chi2ndf2d[i+1][j] != 0. :
+                    a2d[i][j] = a2d[i+1][j]
+                    b2d[i][j] = b2d[i+1][j]
+                    c2d[i][j] = c2d[i+1][j]
+                    t2d[i][j] = t2d[i+1][j]
+                elif j > 0 and a2d[i][j-1] != 0. and chi2ndf2d[i][j-1] != 0. :
+                    a2d[i][j] = a2d[i][j-1]
+                    b2d[i][j] = b2d[i][j-1]
+                    c2d[i][j] = c2d[i][j-1]
+                    t2d[i][j] = t2d[i][j-1]
+                elif j < 255 and a2d[i][j+1] != 0. and chi2ndf2d[i][j+1] != 0. :
+                    a2d[i][j] = a2d[i][j+1]
+                    b2d[i][j] = b2d[i][j+1]
+                    c2d[i][j] = c2d[i][j+1]
+                    t2d[i][j] = t2d[i][j+1]
+                else:
+                    a2d[i][j] = globalPars[0]
+                    b2d[i][j] = globalPars[1]
+                    c2d[i][j] = globalPars[2]
+                    t2d[i][j] = globalPars[3]
 
     # make the root tree
-    print "make the root tree"
+    print "making the root tree"
     for i in xrange(256):
         for j in xrange(256):
             pixx[0] = j
@@ -302,10 +331,10 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
             roott.Fill()
     rootf.Write()
     rootf.Close()
-    print "tree done, making 1D plots"
 
     # save plots
     # 1D plots
+    print "making 1D plots"
     chi2ndf1d = list(itertools.chain(*chi2ndf2d))
     fig, ax = plt.subplots(1, 1, figsize=(12, 12))
     ax.tick_params(axis='x', pad=20)
@@ -331,6 +360,8 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
         item.set_fontsize(40)
     limits = ax.axis()
     plt.xticks(np.arange(limits[0],limits[1]+1,(limits[1]-limits[0])/5.))
+    plt.plot((globalPars[0], globalPars[0]), (limits[2], limits[3]), 'b-')
+    ax.axis(limits)
     fig.tight_layout()
     fig.savefig("plots/KDESurrogateFits/%s_a_hist.pdf" %assembly)
 
@@ -344,6 +375,8 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
         item.set_fontsize(40)
     limits = ax.axis()
     plt.xticks(np.arange(limits[0],limits[1]+1,(limits[1]-limits[0])/5.))
+    plt.plot((globalPars[1], globalPars[1]), (limits[2], limits[3]), 'b-')
+    ax.axis(limits)
     fig.tight_layout()
     fig.savefig("plots/KDESurrogateFits/%s_b_hist.pdf" %assembly)
 
@@ -357,6 +390,8 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
         item.set_fontsize(40)
     limits = ax.axis()
     plt.xticks(np.arange(limits[0],limits[1]+1,(limits[1]-limits[0])/4.))
+    plt.plot((globalPars[2], globalPars[2]), (limits[2], limits[3]), 'b-')
+    ax.axis(limits)
     fig.tight_layout()
     fig.savefig("plots/KDESurrogateFits/%s_c_hist.pdf" %assembly)
 
@@ -370,6 +405,8 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
         item.set_fontsize(40)
     limits = ax.axis()
     plt.xticks(np.arange(limits[0],limits[1]+1,(limits[1]-limits[0])/5.))
+    plt.plot((globalPars[3], globalPars[3]), (limits[2], limits[3]), 'b-')
+    ax.axis(limits)
     fig.tight_layout()
     fig.savefig("plots/KDESurrogateFits/%s_t_hist.pdf" %assembly)
 
@@ -378,7 +415,7 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
     dx, dy = 1.0, 1.0
     y, x = np.mgrid[slice(0, C.npixY + dy, dy),slice(0, C.npixX + dx, dx)]
 
-    chi2ndf2d = np.ma.masked_equal(chi2ndf2d,0)
+    chi2ndf2d = np.ma.masked_equal(chi2ndf2d,0) # mask zeros
     fig, ax = plt.subplots(1,1,figsize=(12, 10))
     ax.set_xlabel('Pixel X', x=1, y=1, horizontalalignment='right')
     ax.set_ylabel('Pixel Y', x=1, y=1, verticalalignment='top')
@@ -390,7 +427,6 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
         item.set_fontsize(40)
     fig.savefig("plots/KDESurrogateFits/%s_chi2ndf_map_nz.pdf" %assembly)
 
-    a2d = np.ma.masked_equal(a2d,0)
     fig, ax = plt.subplots(1,1,figsize=(12, 10))
     ax.set_xlabel('Pixel X', x=1, y=1, horizontalalignment='right')
     ax.set_ylabel('Pixel Y', x=1, y=1, verticalalignment='top')
@@ -400,9 +436,8 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
     plt.axis([x.min(), x.max(), y.min(), y.max()])
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(40)
-    fig.savefig("plots/KDESurrogateFits/%s_a_map_nz.pdf" %assembly)
+    fig.savefig("plots/KDESurrogateFits/%s_a_map.pdf" %assembly)
 
-    b2d = np.ma.masked_equal(b2d,0)
     fig, ax = plt.subplots(1,1,figsize=(12, 10))
     ax.set_xlabel('Pixel X', x=1, y=1, horizontalalignment='right')
     ax.set_ylabel('Pixel Y', x=1, y=1, verticalalignment='top')
@@ -412,9 +447,8 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
     plt.axis([x.min(), x.max(), y.min(), y.max()])
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(40)
-    fig.savefig("plots/KDESurrogateFits/%s_b_map_nz.pdf" %assembly)
+    fig.savefig("plots/KDESurrogateFits/%s_b_map.pdf" %assembly)
 
-    c2d = np.ma.masked_equal(c2d,0)
     fig, ax = plt.subplots(1,1,figsize=(12, 10))
     ax.set_xlabel('Pixel X', x=1, y=1, horizontalalignment='right')
     ax.set_ylabel('Pixel Y', x=1, y=1, verticalalignment='top')
@@ -424,9 +458,8 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
     plt.axis([x.min(), x.max(), y.min(), y.max()])
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(40)
-    fig.savefig("plots/KDESurrogateFits/%s_c_map_nz.pdf" %assembly)
+    fig.savefig("plots/KDESurrogateFits/%s_c_map.pdf" %assembly)
 
-    t2d = np.ma.masked_equal(t2d,0)
     fig, ax = plt.subplots(1,1,figsize=(12, 10))
     ax.set_xlabel('Pixel X', x=1, y=1, horizontalalignment='right')
     ax.set_ylabel('Pixel Y', x=1, y=1, verticalalignment='top')
@@ -436,9 +469,15 @@ def fitPixelSurrogates(assembly,parEsts,parLLims,parULims):
     plt.axis([x.min(), x.max(), y.min(), y.max()])
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
         item.set_fontsize(40)
-    fig.savefig("plots/KDESurrogateFits/%s_t_map_nz.pdf" %assembly)
+    fig.savefig("plots/KDESurrogateFits/%s_t_map.pdf" %assembly)
 
-    print "finished assembly %s" %assembly, n_noFitPixels, "pixels were not fit"
+    print "Finished assembly %s" %assembly
+    print "Peak chi2ndf", peak_chi2ndf
+    print "Standard deviation of chi2ndf", std_chi2ndf
+    print "So chi2ndf cut at", chi2ndf_cut
+    print "Pixels not fit due to no/not enough data points:", n_noFitPixels
+    print "Pixels removed due to bad chi2ndf:", over_chi2threshold
+    print "Pixels replaced:", n_replaced
 
 def getParEstLim(assembly):
 
@@ -474,7 +513,29 @@ def getParEstLim(assembly):
     
     return parEsts, parLLims, parULims
 
+def getGlobalPar(assembly):
+
+    if assembly == "A06-W0110":
+        globalPars = [12.76,399.3,2104.0,-1.663]
+
+    if assembly == "B06-W0125":
+        globalPars = [30.8,484.3,1301.0,1.65]
+
+    if assembly == "B07-W0125":
+        globalPars = [14.1,405.7,2148.0,-1.408]
+
+    if assembly == "C04-W0110":
+        globalPars = [14.56,289.4,869.3,0.4814]
+
+    if assembly == "D09-W0126":
+        globalPars = [17.49,449.6,1132.0,1.727]
+
+    if assembly == "L04-W0125":
+        globalPars = [15.36,414.0,2026.0,-1.043]
+
+    return globalPars
 
 parEsts, parLLims, parULims = getParEstLim(assembly)
-fitPixelSurrogates(assembly,parEsts,parLLims,parULims)
+globalPars = getGlobalPar(assembly)
+fitPixelSurrogates(assembly,parEsts,parLLims,parULims,globalPars)
 
